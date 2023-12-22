@@ -37,7 +37,6 @@ const userSchema = new Schema(
 
 const Users = mongoose.model("loginAndRegister", userSchema);
 
-
 // ----------------------REGISTER-----------------------------
 
 app.post("/register", async (req, res) => {
@@ -55,15 +54,12 @@ app.post("/register", async (req, res) => {
         password: hashedPassword,
       });
       await user.save();
-      res.status(200).json({ message: "user created!" });
+      res.status(200).send(user);
     }
   } catch (error) {
     res.status(500).send("Internal Server Error");
   }
 });
-
-
-
 
 // --------------------------LOGIN--------------------------------------------
 
@@ -82,8 +78,6 @@ app.post("/login", async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
-
-
 
 // --------------------------DELETE--------------------------------------------
 
@@ -106,9 +100,6 @@ app.delete("/users/:id", async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
-
-
-
 
 // --------------------------GET ALL USERS--------------------------------------------
 
