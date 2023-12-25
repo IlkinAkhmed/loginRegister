@@ -46,15 +46,19 @@ app.post("/register", async (req, res) => {
       res.send("Username already exist!! Try other Username");
       return;
     } else {
-      const { username, role } = req.body;
+      const { username } = req.body;
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
       const user = new Users({
         username,
-        role,
         password: hashedPassword,
+        role: "user",
       });
       await user.save();
-      res.status(200).send(user);
+      const token = jwt.sign(
+        { username: user.username, role: user.role },
+        PrivateKey
+      );
+      res.status(200).send(token);
     }
   } catch (error) {
     res.status(500).send("Internal Server Error");
@@ -65,11 +69,14 @@ app.post("/register", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   try {
-    const { username, role, password } = req.body;
+    const { username, password } = req.body;
     const user = await Users.findOne({ username: username });
     if (user && bcrypt.compare(password, user.password)) {
       req.session.userId = user._id;
-      const token = jwt.sign({ username: username, role: role }, PrivateKey);
+      const token = jwt.sign(
+        { username: user.username, role: user.role },
+        PrivateKey
+      );
       res.status(200).send(token);
     } else {
       res.status(403).send("wrong details!!!");
@@ -85,13 +92,18 @@ app.delete("/users/:id", async (req, res) => {
   try {
     const token = req.headers.authorization;
     const decoded = jwt.verify(token, PrivateKey);
+    console.log(decoded);
     if (decoded) {
-      const { id } = req.params;
-      const user = await Users.findByIdAndDelete(id);
-      if (user) {
-        res.status(200).send("User Deleted");
+      if (decoded.role === "admin") {
+        const { id } = req.params;
+        const user = await Users.findByIdAndDelete(id);
+        if (user) {
+          res.status(200).send("User Deleted");
+        } else {
+          res.status(404).send("User Not Found");
+        }
       } else {
-        res.status(404).send("User Not Found");
+        res.status(403).send("You have not acces to delete user");
       }
     } else {
       res.status(403).send("You have not acces to delete user");
